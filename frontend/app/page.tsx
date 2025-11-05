@@ -15,6 +15,10 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Use backend URL from environment variable
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -23,15 +27,21 @@ export default function ChatPage() {
   useEffect(() => {
     const startChat = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/start");
+        const res = await axios.get(`${BACKEND_URL}/start`);
         setSessionId(res.data.session_id);
         setMessages([{ sender: "bot", text: res.data.reply }]);
       } catch (err) {
         console.error("Error starting chat:", err);
+        setMessages([
+          {
+            sender: "bot",
+            text: "⚠️ Could not connect to server. Try again later.",
+          },
+        ]);
       }
     };
     startChat();
-  }, []);
+  }, [BACKEND_URL]);
 
   const sendMessage = async () => {
     if (!input.trim() || !sessionId) return;
@@ -42,7 +52,7 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/chat", {
+      const res = await axios.post(`${BACKEND_URL}/chat`, {
         message: userMessage,
         session_id: sessionId,
       });
@@ -76,8 +86,6 @@ export default function ChatPage() {
             HealthCare<span className="text-emerald-500">+</span>
           </h1>
         </div>
-
-        {/* New Chat Button */}
         <button
           onClick={() => window.location.reload()}
           className="text-sm text-emerald-600 border border-emerald-400 px-3 py-1 rounded-full hover:bg-emerald-100 transition">
@@ -103,13 +111,11 @@ export default function ChatPage() {
             </div>
           </div>
         ))}
-
         {loading && (
           <div className="text-gray-400 italic text-sm animate-pulse">
             Assistant is typing...
           </div>
         )}
-
         <div ref={chatEndRef}></div>
       </main>
 
